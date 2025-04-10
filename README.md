@@ -49,5 +49,5 @@ The system uses **Fuzzy Logic** to process sensor data and make care decisions f
 
 ### ✅ Product:
 ![AgriTomato](Pictures/Sensor_Nodes.png)
-![AgriTomato](Pictures/Gateway01.png)
-![AgriTomato](Pictures/Gateway02.png)
+![AgriTomato](Pictures/Gateway01.jpg)
+![AgriTomato](Pictures/Gateway02.jpg)
