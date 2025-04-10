@@ -1,0 +1,4 @@
+../Core/Src/BH1750.c:10:6:BH1750_Init	4	static
+../Core/Src/BH1750.c:28:6:BH1750_Cmd_Write	32	static
+../Core/Src/BH1750.c:36:6:BH1750_Start	8	static
+../Core/Src/BH1750.c:42:10:BH1750_Read	24	static
