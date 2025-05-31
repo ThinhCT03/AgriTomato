@@ -39,14 +39,21 @@
 /* USER CODE BEGIN PM */
 LoRa myLoRa;
 uint16_t LoRa_Status;
-uint8_t RxBuffer[1];
+uint8_t RxBuffer[4];
 uint16_t Data_Moisture;
 uint8_t packet[5];
-uint8_t retry = 0;
-float soil_TEMP;
-float moisture_percentage;
+uint8_t Alarm_Set = 0x02;
+//float soil_TEMP;
+//float moisture_percentage;
 #define ADC_MIN 1000  // Giá trị ADC khi đất ướt
 #define ADC_MAX 3000  // Giá trị ADC khi đất khô
+
+typedef struct Sensor_Data {
+	float soil_TEMP;
+	float moisture_percentage;
+} Data;
+Data Sensor_data;
+
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,7 +79,7 @@ static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
-
+void Data_Sending(const Data *_Data);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -115,6 +122,8 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
+
+//LORA STATUS CONFIG
   myLoRa = newLoRa();
 
   myLoRa.CS_port         = NSS_GPIO_Port;
@@ -136,11 +145,9 @@ int main(void)
   if (LoRa_init(&myLoRa) == LORA_OK){
 	  LoRa_Status = 1;
   }
-  LoRa_startReceiving(&myLoRa);
-  HAL_Delay(2000); //STABLE THE POWER AND MCU
 
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-//  DS18B20_Init();
+//STABLE THE POWER AND MCU TO MAKE FLASHING JOB EASIER
+//  HAL_Delay(2000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -150,53 +157,58 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //	TURN OFF THE INTERRUPT FROM SX1278 LORA MODULE TO AVOILD UNWANTED WAKEUP STM32
-  	  HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-	  //	ENTER SLEEPMODE AND NOW THE SYSTEM WAIT FOR INTERRUPT FROM RTC TO WAKEUP
+////TURN OFF THE INTERRUPT FROM SX1278 LORA MODULE TO AVOILD UNWANTED WAKEUP STM32F1 BY SEND MODULE TO SLEEPMODE
+	  LoRa_gotoMode(&myLoRa, SLEEP_MODE);
+////ENTER SLEEPMODE AND NOW THE SYSTEM WAIT FOR INTERRUPT FROM RTC TO WAKEUP
   	  HAL_SuspendTick();
-  	  HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-	  //	RESUME TICK AFTER WAKING UP AND ENABLE THE INTERRUPT ON GPIO PB10 OF SX1278 TO INDICATE WHEN THE DATA IS RECEIVED
+// 	  HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+  	  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+////RESUME TICK AFTER WAKING UP AND TURNON THE POWER MOSFET FOR READING DATA PROCESS
+  	  SystemClock_Config();
   	  HAL_ResumeTick();
-  	  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
  	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); // Set the pin out put high to turn on the power Mosfet
-  	  HAL_Delay(100); //Delay couple ms to stable the sensor's power
+  	  HAL_Delay(500); //Delay couple ms to stable the sensor's power
+  	  LoRa_gotoMode(&myLoRa, STNBY_MODE);
+	  LoRa_startReceiving(&myLoRa);
 
-	//READ DS18B20
-      soil_TEMP = Check_Temp();
+//READ DS18B20
+  	  Sensor_data.soil_TEMP = Check_Temp();
 
-	//READ ADC Moisture
+//READ ADC Moisture
 	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&Data_Moisture, 1);
 	  HAL_Delay(10);
 	  HAL_ADC_Stop_DMA(&hadc1);
 
 	  if (Data_Moisture > ADC_MAX) Data_Moisture = ADC_MAX;
 	  if (Data_Moisture < ADC_MIN) Data_Moisture = ADC_MIN;
-	  moisture_percentage = ((float)(ADC_MAX - Data_Moisture) / (ADC_MAX - ADC_MIN)) * 100;
+	  Sensor_data.moisture_percentage = ((float)(ADC_MAX - Data_Moisture) / (ADC_MAX - ADC_MIN)) * 100;
 
 //SEND LORA DATA
-	  uint16_t SOIL_TEMP    = (uint16_t)(soil_TEMP * 10);
-	  uint16_t DATA_Moisture = (uint16_t)(moisture_percentage * 10);
+	  Data_Sending(&Sensor_data);
 
-	  packet[0] = 0xA2;  // Check ID
-	  packet[1] = (uint8_t)(SOIL_TEMP >> 8);
-	  packet[2] = (uint8_t)(SOIL_TEMP & 0xFF);
-	  packet[3] = (uint8_t)(DATA_Moisture >> 8);
-	  packet[4] = (uint8_t)(DATA_Moisture & 0xFF);
+//HANDLE START NETWORK CASE IF GATEWAY REQUIRE
+	if (RxBuffer[0] == 0xFF)
+	{
+		while (RxBuffer[0] != 0xC0) //0xEE
+		{
+			//Wait for 0xC0 indicate ACK
+			//If received ACK --> break while and send back ACK to gateway to indicate that sensor node is ready to start networ
+		}
+	HAL_Delay(250); //WAIT FOR NODE 1 TO FINISH ACK TRANSMIT
+	LoRa_transmit(&myLoRa, &Alarm_Set, sizeof(Alarm_Set), 500);
+	//After sending ACK --> sensor node wait for gateway to received all ACK from all other sensor nodes. After that, Gateway send start signal 0xB0 to start network
+	LoRa_startReceiving(&myLoRa);
+//	HAL_Delay(500); DO WE REALLY NEED THIS??
+	while (RxBuffer[0] != 0xB0) //0xDD
+		{
+			//wait for start signal 0xB0
+		}
+	//Finally, after received start signal from Gateway --> Reset wake up alarm to synchronize time slot between nodes
+	MX_RTC_Init();
+	}
 
-	  LoRa_transmit(&myLoRa, (uint8_t*)packet, sizeof(packet), 500);
-	  LoRa_startReceiving(&myLoRa);
-	  HAL_Delay(1000);
-
-	  while (RxBuffer[0] != 0x02 && retry < 2) //Gửi lại data nếu không có phản hồi ACK
-	  {
-	      LoRa_transmit(&myLoRa, (uint8_t*)packet, sizeof(packet), 500);
-	      LoRa_startReceiving(&myLoRa);
-	      HAL_Delay(500);
-	      retry++;
-	  }
-	  retry = 0;
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-
+//AFTER SENDING SENSOR DATA, TURN OFF THE POWER MOSFET AND GO TO SLEEP AGAIN, WAITING FOR A NEW RTC WAKE UP...
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
   }
   /* USER CODE END 3 */
 }
@@ -354,7 +366,7 @@ static void MX_RTC_Init(void)
   */
   sAlarm.AlarmTime.Hours = 0x0;
   sAlarm.AlarmTime.Minutes = 0x0;
-  sAlarm.AlarmTime.Seconds = 0x5;
+  sAlarm.AlarmTime.Seconds = 0x11;
   sAlarm.Alarm = RTC_ALARM_A;
   if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -530,26 +542,53 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
     RTC_AlarmTypeDef sAlarm = {0};
 
 
-    // Lấy thời gian hiện tại
+    // Get current time
     HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);  // Chuyển sang RTC_FORMAT_BIN để dễ tính toán
 
-    // Cộng thêm 10 giây, xử lý tràn giây/phút/giờ
+    // Adding 10s to wake up sequence, because first setting of the alarm is 10s so this node will wake up at 10s 20s 30s...
     uint32_t total_seconds = sTime.Hours * 3600 + sTime.Minutes * 60 + sTime.Seconds + 10;
     sAlarm.AlarmTime.Hours   = (total_seconds / 3600) % 24;
     sAlarm.AlarmTime.Minutes = (total_seconds / 60) % 60;
     sAlarm.AlarmTime.Seconds = total_seconds % 60;
     sAlarm.Alarm = RTC_ALARM_A;
-
+    // Re-set alarm with updated wakeup time
     HAL_RTC_SetAlarm_IT(hrtc, &sAlarm, RTC_FORMAT_BIN);  // Sử dụng RTC_FORMAT_BIN
 }
 
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) //Sự kiện callback xảy ra khi có data đến
+//THIS WAKE UP TRIGGERED BY GPIO DIO0, HAPPENS WHEN A DATA RECEIVED BY SX1278 MODULE
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_Pin == DIO0_Pin)  // Có data đến
+    if (GPIO_Pin == DIO0_Pin)
     {
-  	  LoRa_receive(&myLoRa, RxBuffer, 1);
+  	  LoRa_receive(&myLoRa, RxBuffer, sizeof(RxBuffer));
     }
+}
+
+//THIS FUNCTION WILL TAKE THE DATA THAT STORED IN DATA STRUCT AND "RIPPED" IT INTO 1 BYTE FORMAT FOR SX1278 TO SEND BYTE BY BYTE TO GATEWAY
+void Data_Sending(const Data *_Data)
+{
+//	  uint8_t retry;
+	  uint16_t SOIL_TEMP    = (uint16_t)(_Data->soil_TEMP * 10);
+	  uint16_t DATA_Moisture = (uint16_t)(_Data->moisture_percentage * 10);
+
+	  packet[0] = 0xA2;  // NODE'S ID
+	  packet[1] = (uint8_t)(SOIL_TEMP >> 8);
+	  packet[2] = (uint8_t)(SOIL_TEMP & 0xFF);
+	  packet[3] = (uint8_t)(DATA_Moisture >> 8);
+	  packet[4] = (uint8_t)(DATA_Moisture & 0xFF);
+	  LoRa_transmit(&myLoRa, (uint8_t*)packet, sizeof(packet), 500);
+//	  LoRa_startReceiving(&myLoRa);
+//	  HAL_Delay(500);
+//
+//	  //Gửi lại data nếu không có phản hồi ACK Data
+//	  while (RxBuffer[1] != 0x02 && retry < 2 && RxBuffer[0] != 0xFF)
+//	  {
+//	      LoRa_transmit(&myLoRa, (uint8_t*)packet, sizeof(packet), 500);
+//	      LoRa_startReceiving(&myLoRa);
+//	      HAL_Delay(500);
+//	      retry++;
+//	  }
+//	  retry = 0;
 }
 /* USER CODE END 4 */
 

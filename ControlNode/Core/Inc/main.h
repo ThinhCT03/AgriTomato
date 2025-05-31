@@ -64,6 +64,18 @@ void Error_Handler(void);
 #define DIO0_Pin GPIO_PIN_10
 #define DIO0_GPIO_Port GPIOB
 #define DIO0_EXTI_IRQn EXTI15_10_IRQn
+#define light_relay_Pin GPIO_PIN_9
+#define light_relay_GPIO_Port GPIOA
+#define water_relay_Pin GPIO_PIN_10
+#define water_relay_GPIO_Port GPIOA
+#define fan_relay_Pin GPIO_PIN_11
+#define fan_relay_GPIO_Port GPIOA
+#define light_sw_Pin GPIO_PIN_3
+#define light_sw_GPIO_Port GPIOB
+#define water_sw_Pin GPIO_PIN_4
+#define water_sw_GPIO_Port GPIOB
+#define fan_sw_Pin GPIO_PIN_5
+#define fan_sw_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
