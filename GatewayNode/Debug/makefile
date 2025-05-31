@@ -34,34 +34,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := Gateway_Node
+BUILD_ARTIFACT_NAME := GateWay_Node
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-Gateway_Node.elf \
+GateWay_Node.elf \
 
 MAP_FILES += \
-Gateway_Node.map \
+GateWay_Node.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-Gateway_Node.list \
+GateWay_Node.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: Gateway_Node.elf secondary-outputs
+main-build: GateWay_Node.elf secondary-outputs
 
 # Tool invocations
-Gateway_Node.elf Gateway_Node.map: $(OBJS) $(USER_OBJS) E:\STide\STMworkspace\Control_Node\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Gateway_Node.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"E:\STide\STMworkspace\Control_Node\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Gateway_Node.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+GateWay_Node.elf GateWay_Node.map: $(OBJS) $(USER_OBJS) E:\STide\STMworkspace\GateWay_Node\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "GateWay_Node.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"E:\STide\STMworkspace\GateWay_Node\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GateWay_Node.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -70,14 +70,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-Gateway_Node.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Gateway_Node.list"
+GateWay_Node.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "GateWay_Node.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) Gateway_Node.elf Gateway_Node.list Gateway_Node.map default.size.stdout
+	-$(RM) GateWay_Node.elf GateWay_Node.list GateWay_Node.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

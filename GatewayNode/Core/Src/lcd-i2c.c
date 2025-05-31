@@ -1,7 +1,4 @@
-
-/** Put this in the src folder **/
-
-#include "i2c-lcd.h"
+#include "lcd-i2c.h"
 extern I2C_HandleTypeDef hi2c1;  // change your handler here accordingly
 
 #define SLAVE_ADDRESS_LCD 0x4E // change this according to ur setup
@@ -32,14 +29,20 @@ void lcd_send_data (char data)
 	HAL_I2C_Master_Transmit (&hi2c1, SLAVE_ADDRESS_LCD,(uint8_t *) data_t, 4, 100);
 }
 
-void lcd_clear (void)
+
+void lcd_clear(void)
 {
-	lcd_send_cmd (0x80);
-	for (int i=0; i<70; i++)
-	{
-		lcd_send_data (' ');
-	}
+    lcd_send_cmd(0x01);  // Lệnh "clear display"
+    HAL_Delay(2);        // Delay khoảng 2ms để LCD xử lý
 }
+//void lcd_clear (void)
+//{
+//	lcd_send_cmd (0x80);
+//	for (int i=0; i<70; i++)
+//	{
+//		lcd_send_data (' ');
+//	}
+//}
 
 void lcd_put_cur(int row, int col)
 {
@@ -93,3 +96,20 @@ void lcd_send_string (char *str)
 {
 	while (*str) lcd_send_data (*str++);
 }
+
+void lcd_send_centered_string(int row, char *str)
+{
+    int len = 0;
+    char *ptr = str;
+    while (*ptr++) len++;  // Tính độ dài chuỗi
+
+    int col = 0;
+    if (len < 20) // chỉ căn giữa nếu độ dài nhỏ hơn 20
+    {
+        col = (20 - len) / 2;
+    }
+
+    lcd_put_cur(row, col);  // đặt vị trí con trỏ
+    lcd_send_string(str);   // in chuỗi
+}
+

@@ -66,16 +66,22 @@ void Error_Handler(void);
 #define DIO0_EXTI_IRQn EXTI2_IRQn
 #define Fan_SW_Pin GPIO_PIN_12
 #define Fan_SW_GPIO_Port GPIOB
+#define Fan_SW_EXTI_IRQn EXTI15_10_IRQn
 #define Next_State_Pin GPIO_PIN_13
 #define Next_State_GPIO_Port GPIOB
+#define Next_State_EXTI_IRQn EXTI15_10_IRQn
 #define Prev_State_Pin GPIO_PIN_14
 #define Prev_State_GPIO_Port GPIOB
+#define Prev_State_EXTI_IRQn EXTI15_10_IRQn
 #define Manual_Pin GPIO_PIN_15
 #define Manual_GPIO_Port GPIOB
-#define Water_pump_Pin GPIO_PIN_3
-#define Water_pump_GPIO_Port GPIOB
-#define Light_SW_Pin GPIO_PIN_4
+#define Manual_EXTI_IRQn EXTI15_10_IRQn
+#define Light_SW_Pin GPIO_PIN_3
 #define Light_SW_GPIO_Port GPIOB
+#define Light_SW_EXTI_IRQn EXTI3_IRQn
+#define Water_pump_Pin GPIO_PIN_4
+#define Water_pump_GPIO_Port GPIOB
+#define Water_pump_EXTI_IRQn EXTI4_IRQn
 
 /* USER CODE BEGIN Private defines */
 
