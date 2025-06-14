@@ -178,7 +178,7 @@ int main(void)
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&Sensor_data.Data_MQ135, 1);
 	HAL_Delay(10);
 	HAL_ADC_Stop_DMA(&hadc1);
-	HAL_Delay(207);
+//	HAL_Delay(210);
 
 //READ DHT11 AND STORE INTO DATA STRUCT
 	DHT11_Start();
@@ -410,7 +410,7 @@ static void MX_RTC_Init(void)
   */
   sAlarm.AlarmTime.Hours = 0x0;
   sAlarm.AlarmTime.Minutes = 0x0;
-  sAlarm.AlarmTime.Seconds = 0x11;
+  sAlarm.AlarmTime.Seconds = 0x10;
   sAlarm.Alarm = RTC_ALARM_A;
   if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -550,7 +550,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : NSS_Pin RST_Pin PB11 */
   GPIO_InitStruct.Pin = NSS_Pin|RST_Pin|GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -568,7 +568,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -579,20 +579,21 @@ static void MX_GPIO_Init(void)
 
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    RTC_TimeTypeDef sTime = {0};
-    RTC_AlarmTypeDef sAlarm = {0};
-
-    // Get current time
-    HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);
-
-    // Adding 10s to wake up sequence, because first setting of the alarm is 11s so this node will wake up at 11s 21s 31s...
-    uint32_t total_seconds = sTime.Hours * 3600 + sTime.Minutes * 60 + sTime.Seconds + 10;
-    sAlarm.AlarmTime.Hours   = (total_seconds / 3600) % 24;
-    sAlarm.AlarmTime.Minutes = (total_seconds / 60) % 60;
-    sAlarm.AlarmTime.Seconds = total_seconds % 60;
-    sAlarm.Alarm = RTC_ALARM_A;
-    // Re-set alarm with updated wakeup time
-    HAL_RTC_SetAlarm_IT(hrtc, &sAlarm, RTC_FORMAT_BIN);
+//    RTC_TimeTypeDef sTime = {0};
+//    RTC_AlarmTypeDef sAlarm = {0};
+//
+//    // Get current time
+//    HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);
+//
+//    // Adding 10s to wake up sequence, because first setting of the alarm is 11s so this node will wake up at 11s 21s 31s...
+//    uint32_t total_seconds = sTime.Hours * 3600 + sTime.Minutes * 60 + sTime.Seconds + 10;
+//    sAlarm.AlarmTime.Hours   = (total_seconds / 3600) % 24;
+//    sAlarm.AlarmTime.Minutes = (total_seconds / 60) % 60;
+//    sAlarm.AlarmTime.Seconds = total_seconds % 60;
+//    sAlarm.Alarm = RTC_ALARM_A;
+//    // Re-set alarm with updated wakeup time
+//    HAL_RTC_SetAlarm_IT(hrtc, &sAlarm, RTC_FORMAT_BIN);
+	MX_RTC_Init();
 }
 
 //THIS WAKE UP TRIGGERED BY GPIO DIO0, HAPPENS WHEN A DATA RECEIVED BY SX1278 MODULE

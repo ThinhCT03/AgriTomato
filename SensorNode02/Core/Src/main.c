@@ -528,7 +528,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -538,21 +538,22 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    RTC_TimeTypeDef sTime = {0};
-    RTC_AlarmTypeDef sAlarm = {0};
-
-
-    // Get current time
-    HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);  // Chuyển sang RTC_FORMAT_BIN để dễ tính toán
-
-    // Adding 10s to wake up sequence, because first setting of the alarm is 10s so this node will wake up at 10s 20s 30s...
-    uint32_t total_seconds = sTime.Hours * 3600 + sTime.Minutes * 60 + sTime.Seconds + 10;
-    sAlarm.AlarmTime.Hours   = (total_seconds / 3600) % 24;
-    sAlarm.AlarmTime.Minutes = (total_seconds / 60) % 60;
-    sAlarm.AlarmTime.Seconds = total_seconds % 60;
-    sAlarm.Alarm = RTC_ALARM_A;
-    // Re-set alarm with updated wakeup time
-    HAL_RTC_SetAlarm_IT(hrtc, &sAlarm, RTC_FORMAT_BIN);  // Sử dụng RTC_FORMAT_BIN
+//    RTC_TimeTypeDef sTime = {0};
+//    RTC_AlarmTypeDef sAlarm = {0};
+//
+//
+//    // Get current time
+//    HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);  // Chuyển sang RTC_FORMAT_BIN để dễ tính toán
+//
+//    // Adding 10s to wake up sequence, because first setting of the alarm is 10s so this node will wake up at 10s 20s 30s...
+//    uint32_t total_seconds = sTime.Hours * 3600 + sTime.Minutes * 60 + sTime.Seconds + 10;
+//    sAlarm.AlarmTime.Hours   = (total_seconds / 3600) % 24;
+//    sAlarm.AlarmTime.Minutes = (total_seconds / 60) % 60;
+//    sAlarm.AlarmTime.Seconds = total_seconds % 60;
+//    sAlarm.Alarm = RTC_ALARM_A;
+//    // Re-set alarm with updated wakeup time
+//    HAL_RTC_SetAlarm_IT(hrtc, &sAlarm, RTC_FORMAT_BIN);  // Sử dụng RTC_FORMAT_BIN
+	MX_RTC_Init();
 }
 
 //THIS WAKE UP TRIGGERED BY GPIO DIO0, HAPPENS WHEN A DATA RECEIVED BY SX1278 MODULE

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>MQTT Toggle Control</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; }
+    h2, h3 { color: #333; }
+    button {
+      margin: 5px;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .on { background-color: #4CAF50; }
+    .off { background-color: #f44336; }
+
+    .sensor-container {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin-top: 20px;
+    }
+
+    .sensor-item {
+      font-size: 18px;
+      margin: 8px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .sensor-item span.icon {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Điều khiển thiết bị qua MQTT (HiveMQ Cloud)</h2>
+
+<div>
+  <button id="lightBtn" class="off" onclick="toggleDevice('light')">Đèn: Tắt</button>
+  <button id="fanBtn" class="off" onclick="toggleDevice('fan')">Quạt: Tắt</button>
+  <button id="pumpBtn" class="off" onclick="toggleDevice('pump')">Bơm: Tắt</button>
+</div>
+
+<h3>Dữ liệu cảm biến nhận từ MQTT:</h3>
+<div class="sensor-container" id="sensorDisplay">
+  <div class="sensor-item"><span class="icon">💧</span>Độ ẩm: --%</div>
+  <div class="sensor-item"><span class="icon">🌡️</span>Nhiệt độ không khí: --°C</div>
+  <div class="sensor-item"><span class="icon">☀️</span>Ánh sáng: -- lux</div>
+  <div class="sensor-item"><span class="icon">🧪</span>Chất lượng khí (MQ135): --</div>
+  <div class="sensor-item"><span class="icon">🌱</span>Nhiệt độ đất: --°C</div>
+  <div class="sensor-item"><span class="icon">💦</span>Độ ẩm đất: --%</div>
+</div>
+
+<script>
+const options = {
+  connectTimeout: 4000,
+  clientId: 'webclient_' + Math.floor(Math.random() * 10000),
+  username: 'thinhlecongkg2003',
+  password: 'Thinh@85204569',
+  keepalive: 60,
+  clean: true,
+  reconnectPeriod: 1000,
+};
+
+const host = 'wss://559fa1abe5694efab30428625fcf4b8c.s1.eu.hivemq.cloud:8884/mqtt';
+const client = mqtt.connect(host, options);
+
+const subscribeTopic = 'system/data';
+const publishTopic = 'send/cmd';
+
+const states = {
+  light: 0,
+  fan: 0,
+  pump: 0
+};
+
+client.on('connect', () => {
+  console.log('Đã kết nối MQTT');
+  client.subscribe(subscribeTopic, (err) => {
+    if (!err) {
+      console.log(`Đã subscribe topic: ${subscribeTopic}`);
+    }
+  });
+});
+
+client.on('message', (topic, message) => {
+  if (topic === subscribeTopic) {
+    const data = JSON.parse(message.toString());
+    
+    // Hiển thị dữ liệu cảm biến, bỏ qua light, fan, pump
+    const container = document.getElementById('sensorDisplay');
+    container.innerHTML = `
+      <div class="sensor-item"><span class="icon">💧</span>Độ ẩm: ${data.humidity}%</div>
+      <div class="sensor-item"><span class="icon">🌡️</span>Nhiệt độ không khí: ${data.temp}°C</div>
+      <div class="sensor-item"><span class="icon">☀️</span>Ánh sáng: ${(data.lux / 10).toFixed(1)} lux</div>
+      <div class="sensor-item"><span class="icon">🧪</span>Chất lượng khí (MQ135): ${data.mq135}</div>
+      <div class="sensor-item"><span class="icon">🌱</span>Nhiệt độ đất: ${data.soil_temp}°C</div>
+      <div class="sensor-item"><span class="icon">💦</span>Độ ẩm đất: ${data.soil_moist}%</div>
+    `;
+  }
+});
+
+function toggleDevice(device) {
+  states[device] = states[device] ? 0 : 1;
+
+  const cmd = {
+    light: states.light,
+    fan: states.fan,
+    pump: states.pump
+  };
+  client.publish(publishTopic, JSON.stringify(cmd));
+  console.log('Đã gửi lệnh:', cmd);
+
+  updateButton('light');
+  updateButton('fan');
+  updateButton('pump');
+}
+
+function updateButton(device) {
+  const btn = document.getElementById(device + 'Btn');
+  btn.textContent = `${device === 'light' ? 'Đèn' : device === 'fan' ? 'Quạt' : 'Bơm'}: ${states[device] ? 'Bật' : 'Tắt'}`;
+  btn.className = states[device] ? 'on' : 'off';
+}
+</script>
+
+</body>
+</html>

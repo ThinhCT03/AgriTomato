@@ -79,6 +79,8 @@ typedef enum {
     SCREEN_TOTAL
 } DisplayScreen_t;
 DisplayScreen_t current_display_screen = SCREEN_SENSOR;
+
+uint8_t buffer[14];
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -108,6 +110,7 @@ void LCD_Display(SensorData_t *sensorData);
 void Received_Data_Handler(void);
 void Sendto_ESP_UART(SensorData_t *data);
 void change_relay_state(void);
+void change_relay_state_update_manual(void);
 
 /* USER CODE END PFP */
 
@@ -254,7 +257,8 @@ int main(void)
 	  if (Data_Sensor_Interrupt == 1)
 	  {
 		  Received_Data_Handler();
-		  Sendto_ESP_UART(&sensorData); // ĐANG CRASH CHƯƠNG TRÌNH TẠI CÁC NÚT BẤM RELAY
+		  HAL_UART_Transmit_IT(&huart1, buffer, sizeof(buffer));
+//		  Sendto_ESP_UART(&sensorData);
 		  LoRa_startReceiving(&myLoRa);
 		  Data_Sensor_Interrupt = 0;
 	  }
@@ -618,10 +622,22 @@ void Received_Data_Handler(void)
 		RX_Data_Control[0] = 0xA3;
 		RX_Data_Control[1] = 0xBB;
 		RX_Data_Control[2] = 0x31;
+
+		buffer[0] = 0xA1;
+		buffer[1] = Received_Data[1];
+		buffer[2] = Received_Data[2];
+		buffer[3] = Received_Data[3];
+		buffer[4] = Received_Data[4];
+		buffer[5] = Received_Data[5];
+		buffer[6] = Received_Data[6];
+		buffer[7] = Received_Data[7];
+		buffer[8] = Received_Data[8];
+
+
 		for (int i = 4; i < 12 ; i++) {
 		    RX_Data_Control[i] = Received_Data[i-3];  // Sao chép dữ liệu cũ từ vị trí 1 trở đi
 		}
-		change_relay_state();
+		change_relay_state_update_manual();
 #endif
 	}
 
@@ -632,10 +648,18 @@ void Received_Data_Handler(void)
 	    sensorData.soil_Moisture = Received_Data[4] | (Received_Data[3] << 8);
 #if new_feature_dev == 1
 		RX_Data_Control[3] = 0x32;
+
+		buffer[0] = 0xA1;
+		buffer[9] = Received_Data[1];
+		buffer[10] = Received_Data[2];
+		buffer[11] = Received_Data[3];
+		buffer[12] = Received_Data[4];
+		buffer[13] = (water_relay << 2) | (fan_relay << 1) | light_relay;
+
 		for (int i = 12; i < 16 ; i++) {
 		    RX_Data_Control[i] = Received_Data[i - 11];  // Sao chép dữ liệu cũ từ vị trí 1 trở đi
 		}
-		change_relay_state();
+		change_relay_state_update_manual();
 #endif
 	}
 
@@ -653,35 +677,35 @@ void Received_Data_Handler(void)
 }
 
 // SENDING DATA TO ESP: 1 BYTE ID + 6*2 DATA BYTES + 1 BYTE RELAYS STATE = 14 BYTES. WE CAN ADD MORE 1 OR 2 HEADER BYTE IF NEEDED.
-void Sendto_ESP_UART(SensorData_t *data)
-{
-    uint8_t buffer[14];
-
-    buffer[0]  = data->Check_ID;
-
-    buffer[1]  = (uint8_t)(data->Humidity >> 8);
-    buffer[2]  = (uint8_t)(data->Humidity & 0xFF);
-
-    buffer[3]  = (uint8_t)(data->Temperature >> 8);
-    buffer[4]  = (uint8_t)(data->Temperature & 0xFF);
-
-    buffer[5]  = (uint8_t)(data->LUX >> 8);
-    buffer[6]  = (uint8_t)(data->LUX & 0xFF);
-
-    buffer[7]  = (uint8_t)(data->Data_MQ135 >> 8);
-    buffer[8]  = (uint8_t)(data->Data_MQ135 & 0xFF);
-
-    buffer[9]  = (uint8_t)(data->soil_Temp >> 8);
-    buffer[10] = (uint8_t)(data->soil_Temp & 0xFF);
-
-    buffer[11] = (uint8_t)(data->soil_Moisture >> 8);
-    buffer[12] = (uint8_t)(data->soil_Moisture & 0xFF);
-
-	// Gộp trạng thái lại thành 1 byte:
-	// Ví dụ: PA11 -> bit 2, PA10 -> bit 1, PA9 -> bit 0
-	buffer[13] = (water_relay << 2) | (fan_relay << 1) | light_relay;
-    HAL_UART_Transmit_IT(&huart1, buffer, sizeof(buffer));
-}
+//void Sendto_ESP_UART(SensorData_t *data)
+//{
+//    uint8_t buffer[14];
+//
+//    buffer[0]  = data->Check_ID;
+//
+//    buffer[1]  = (uint8_t)(data->Humidity >> 8);
+//    buffer[2]  = (uint8_t)(data->Humidity & 0xFF);
+//
+//    buffer[3]  = (uint8_t)(data->Temperature >> 8);
+//    buffer[4]  = (uint8_t)(data->Temperature & 0xFF);
+//
+//    buffer[5]  = (uint8_t)(data->LUX >> 8);
+//    buffer[6]  = (uint8_t)(data->LUX & 0xFF);
+//
+//    buffer[7]  = (uint8_t)(data->Data_MQ135 >> 8);
+//    buffer[8]  = (uint8_t)(data->Data_MQ135 & 0xFF);
+//
+//    buffer[9]  = (uint8_t)(data->soil_Temp >> 8);
+//    buffer[10] = (uint8_t)(data->soil_Temp & 0xFF);
+//
+//    buffer[11] = (uint8_t)(data->soil_Moisture >> 8);
+//    buffer[12] = (uint8_t)(data->soil_Moisture & 0xFF);
+//
+//	// Gộp trạng thái lại thành 1 byte:
+//	// Ví dụ: PA11 -> bit 2, PA10 -> bit 1, PA9 -> bit 0
+//	buffer[13] = (water_relay << 2) | (fan_relay << 1) | light_relay;
+//    HAL_UART_Transmit_IT(&huart1, buffer, sizeof(buffer));
+//}
 
 //THIS WAKE UP TRIGGERED BY GPIO DIO0, HAPPENS WHEN A DATA RECEIVED BY SX1278 MODULE
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -815,6 +839,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     	HAL_UART_Receive_IT(&huart1, &ESP_rx_data, 1); //Cấu hình nhận data từ UART cho lần ngắt sau
 		manual_interrupt_flag = 1;
+		control_mode = MODE_MANUAL;
 		light_relay  = (ESP_rx_data >> 0) & 0x01; // Lấy bit 0
 		fan_relay = (ESP_rx_data >> 1) & 0x01; // Lấy bit 1
 		water_relay = (ESP_rx_data >> 2) & 0x01; // Lấy bit 2
@@ -827,6 +852,22 @@ void change_relay_state(void)
     relay_state = (water_relay) | (light_relay << 1) | (fan_relay << 2);
     TxBuffer[0] = 0xA3;       // Control node ID
     TxBuffer[1] = 0xAA;
+    TxBuffer[2] = relay_state; // Relay state byte
+
+    // Transmit the packet
+    LoRa_transmit(&myLoRa, TxBuffer, 3, 500);
+
+    // Switch back to receive mode
+    LoRa_startReceiving(&myLoRa);
+}
+
+
+void change_relay_state_update_manual(void)
+{
+    // Prepare the packet for transmission
+    relay_state = (water_relay) | (light_relay << 1) | (fan_relay << 2);
+    TxBuffer[0] = 0xA3;       // Control node ID
+    TxBuffer[1] = 0xCC;
     TxBuffer[2] = relay_state; // Relay state byte
 
     // Transmit the packet

@@ -7,7 +7,7 @@
 ../Core/Src/main.c:467:13:MX_TIM1_Init	32	static
 ../Core/Src/main.c:511:13:MX_DMA_Init	16	static
 ../Core/Src/main.c:529:13:MX_GPIO_Init	40	static
-../Core/Src/main.c:580:6:HAL_RTC_AlarmAEventCallback	32	static
-../Core/Src/main.c:599:6:HAL_GPIO_EXTI_Callback	16	static
-../Core/Src/main.c:609:6:Data_Sending	24	static
-../Core/Src/main.c:645:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:580:6:HAL_RTC_AlarmAEventCallback	16	static
+../Core/Src/main.c:600:6:HAL_GPIO_EXTI_Callback	16	static
+../Core/Src/main.c:610:6:Data_Sending	24	static
+../Core/Src/main.c:646:6:Error_Handler	4	static,ignoring_inline_asm
