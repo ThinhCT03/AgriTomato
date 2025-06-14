@@ -222,6 +222,40 @@ int main(void)
 		      default:
 		    	  break;
 		  }
+
+		  if (Received_Data[0] == 0xA3 && Received_Data[1] == 0xCC && control_mode != MODE_AUTOMATE)
+		  {
+		        // Extract relay state from the second byte
+		        relay_state = Received_Data[2];
+
+		        // Control the relays based on the relay state
+		        if (relay_state & 0x01)  // Check if bit 0 (water pump) is set
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET); // Turn on water pump
+		        }
+		        else
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET); // Turn off water pump
+		        }
+
+		        if (relay_state & 0x02)  // Check if bit 1 (light) is set
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); // Turn on light
+		        }
+		        else
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET); // Turn off light
+		        }
+
+		        if (relay_state & 0x04)  // Check if bit 2 (fan) is set
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET); // Turn on fan
+		        }
+		        else
+		        {
+		            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET); // Turn off fan
+		        }
+		  }
 	  }
 #endif
   }
